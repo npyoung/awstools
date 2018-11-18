@@ -26,6 +26,22 @@ def main():
 
 @main.command()
 @click.argument('name', type=str)
+@click.argument('type', type=str, required=False)
+def type(name, type=None):
+    instances = instances_by_name(name)
+    for instance in instances:
+        if not type:
+            print("{:s}: {:s}".format(instance.private_ip_address,
+                                      instance.instance_type))
+        else:
+            instance.modify_attribute(
+                InstanceType={
+                    'Value': type
+                }
+            )
+
+@main.command()
+@click.argument('name', type=str)
 def start(name):
     instances = instances_by_name(name)
     for instance in instances:
