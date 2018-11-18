@@ -40,9 +40,8 @@ def attach(name):
     if len(ips) == 1:
         ip = ips[0]
         print("Logging into {:s}".format(ip))
-        subprocess.run(["ssh",
-                        "-oStrictHostKeyChecking=no",
-                        ip], shell=True)
+        subprocess.call('ssh -oStrictHostKeyChecking=no ' + ip,
+                        shell=True)
     else:
         raise ValueError("There were {:d} instances by that name".format(len(ips)))
 
