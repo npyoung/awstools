@@ -42,6 +42,13 @@ def type(name, type=None):
 
 @main.command()
 @click.argument('name', type=str)
+def status(name):
+    instances = instances_by_name(name)
+    for instance in instances:
+        print("{:s}".format(instance.state['Name']))
+
+@main.command()
+@click.argument('name', type=str)
 def start(name):
     instances = instances_by_name(name)
     for instance in instances:
