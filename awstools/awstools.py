@@ -3,6 +3,7 @@ import click
 import boto3
 import subprocess
 from os.path import expanduser, isfile
+from time import sleep, time
 
 ec2 = boto3.resource('ec2')
 
@@ -18,6 +19,14 @@ def instances_by_name(name):
     )
     return response
 
+def wait(instance, state, timeout=5, interval=0.1):
+    t0 = time()
+    while instance.state['Name'] != state:
+        if time() - t0 > timeout:
+            return False
+        else:
+            sleep(interval)
+    return True
 
 @click.group()
 def main():
@@ -53,6 +62,9 @@ def start(name):
     instances = instances_by_name(name)
     for instance in instances:
         instance.start()
+    print("Waiting for instances to start")
+    for instance in instances:
+        wait(instance, 'running')
 
 
 @main.command()
@@ -120,7 +132,8 @@ def unforward(name, port):
 
 @main.command()
 @click.argument('name', type=str)
-def stop(name):
+@click.option('--block/--no-block', default=False)
+def stop(name, block):
     instances = instances_by_name(name)
     for instance in instances:
         ip = instance.private_ip_address
@@ -131,7 +144,11 @@ def stop(name):
                               "-S", socket_name,
                               "-TO", "exit",
                               ip])
-        instances.stop()
+    instances.stop()
+    if block:
+        print("Waiting on instances to stop")
+        for instance in instances:
+            wait(instance, 'stopped')
 
 
 if __name__ == "__main__":
