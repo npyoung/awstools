@@ -69,9 +69,13 @@ def start(name):
 
 @main.command()
 @click.argument('name', type=str)
-def attach(name):
+@click.option('--public/--private', default=False)
+def attach(name, public):
     instances = instances_by_name(name)
-    ips = [instance.private_ip_address for instance in instances]
+    if public:
+        ips = [instance.public_ip_address for instance in instances]
+    else:
+        ips = [instance.private_ip_address for instance in instances]
     if len(ips) == 1:
         ip = ips[0]
         print("Logging into {:s}".format(ip))
