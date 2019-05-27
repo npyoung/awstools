@@ -88,9 +88,14 @@ def attach(name, public):
 @main.command()
 @click.argument('name', type=str)
 @click.argument('port', type=int, default=8888)
-def forward(name, port):
+@click.option('--public/--private', default=False)
+def forward(name, port, public):
     instances = instances_by_name(name)
     ips = [instance.private_ip_address for instance in instances]
+    if public:
+        ips = [instance.public_ip_address for instance in instances]
+    else:
+        ips = [instance.private_ip_address for instance in instances]
     if len(ips) == 1:
         ip = ips[0]
         print("Forwarding port {:d} from {:s}".format(port, ip))
