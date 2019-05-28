@@ -79,7 +79,7 @@ def attach(name, public):
     if len(ips) == 1:
         ip = ips[0]
         print("Logging into {:s}".format(ip))
-        subprocess.call('ssh -oStrictHostKeyChecking=no ' + ip,
+        subprocess.call('ssh -oStrictHostKeyChecking=no ' + "ubuntu@{:s}".format(ip),
                         shell=True)
     else:
         raise ValueError("There were {:d} instances by that name".format(len(ips)))
@@ -105,7 +105,7 @@ def forward(name, port, public):
                           "-S", socket_name,
                           "-fNTM",
                           "-L", "{0:d}:localhost:{0:d}".format(port),
-                          ip])
+                          "ubuntu@{:s}".format(ip)])
     else:
         raise ValueError("There were {:d} instances by that name".format(len(ips)))
 
