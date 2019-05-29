@@ -19,10 +19,11 @@ def instances_by_name(name):
     )
     return response
 
-def wait(instance, state, timeout=5, interval=0.1):
+def wait(instance, state, timeout=None, interval=0.5):
     t0 = time()
     while instance.state['Name'] != state:
-        if time() - t0 > timeout:
+        instance.reload()
+        if (timeout is not None) and (time() - t0 > timeout):
             return False
         else:
             sleep(interval)
@@ -65,7 +66,6 @@ def start(name):
     print("Waiting for instances to start")
     for instance in instances:
         wait(instance, 'running')
-
 
 @main.command()
 @click.argument('name', type=str)
