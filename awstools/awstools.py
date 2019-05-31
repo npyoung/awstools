@@ -17,6 +17,8 @@ def instances_by_name(name):
             }
         ]
     )
+    if len(response) == 0:
+        print("No instances found by that name")
     return response
 
 def wait(instance, state, timeout=None, interval=0.5):
@@ -158,6 +160,8 @@ def stop(name, block):
         print("Waiting on instances to stop")
         for instance in instances:
             wait(instance, 'stopped')
+    for instance in instances:
+        print("{:s} is now {:s}".format(ip.private_ip_address, instance.state['Name']))
 
 
 if __name__ == "__main__":
