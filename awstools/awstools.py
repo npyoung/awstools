@@ -17,7 +17,7 @@ def instances_by_name(name):
             }
         ]
     )
-    if len(response) == 0:
+    if len([x for x in response]) == 0:
         print("No instances found by that name")
     return response
 
