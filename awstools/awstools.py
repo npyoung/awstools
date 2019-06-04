@@ -70,6 +70,20 @@ def start(name):
     for instance in instances:
         wait(instance, 'running')
 
+
+@main.command()
+@click.argument('name', type=str)
+@click.option('--public/--private', default=False)
+def ip(name, public):
+    instances = instances_by_name(name)
+    if public:
+        ips = [instance.public_ip_address for instance in instances]
+    else:
+        ips = [instance.private_ip_address for instance in instances]
+    for ip in ips:
+        print(ip)
+
+
 @main.command()
 @click.argument('name', type=str)
 @click.option('--public/--private', default=False)
@@ -89,12 +103,42 @@ def attach(name, public):
 
 
 @main.command()
+@click.argument('from', type=str)
+@click.argument('to', type=str)
+@click.option('--public/--private', default=False)
+def sync(frm, to, public):
+    substituted_paths = []
+    for path in [frm, to]:
+        if ':' in path:
+            name, trail = path.split(':', 1)
+            instances = instances_by_name(name)
+            if public:
+                ips = [instance.public_ip_address for instance in instances]
+            else:
+                ips = [instance.private_ip_address for instance in instances]
+            if len(ips) == 1:
+                ip = ips[0]
+            else:
+                raise ValueError("There were {:d} instances by that name".format(len(ips)))
+            new_path = ':'.join([ip, trail])
+            substituted_paths.append(new_path)
+        else:
+            substituted_paths.append(path)
+
+    print("Rsyncing from {:s} to {:s}".format(*substituted_paths))
+    subprocess.Popen(["rsync",
+                      "-arvz",
+                      "--progress",
+                      "{:s}".format(substituted_paths[0]),
+                      "{:s}".format(substituted_paths[1])])
+
+
+@main.command()
 @click.argument('name', type=str)
 @click.argument('port', type=int, default=8888)
 @click.option('--public/--private', default=False)
 def forward(name, port, public):
     instances = instances_by_name(name)
-    ips = [instance.private_ip_address for instance in instances]
     if public:
         ips = [instance.public_ip_address for instance in instances]
     else:
@@ -178,7 +222,7 @@ def stop(name, block):
         for instance in instances:
             wait(instance, 'stopped')
     for instance in instances:
-        print("{:s} is now {:s}".format(ip.private_ip_address, instance.state['Name']))
+        print("{:s} is now {:s}".format(instance.private_ip_address, instance.state['Name']))
 
 
 if __name__ == "__main__":
