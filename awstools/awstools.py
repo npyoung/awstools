@@ -145,6 +145,21 @@ def unforward(name, port):
 
 @main.command()
 @click.argument('name', type=str)
+@click.option('--block/--no-block', default=True)
+def reboot(name, block):
+    instances = instances_by_name(name)
+    for instance in instances:
+        instance.reboot()
+    if block:
+        print("Waiting on instances to stop")
+        for instance in instances:
+            wait(instance, 'running')
+    for instance in instances:
+        print("{:s} is now {:s}".format(ip.private_ip_address, instance.state['Name']))
+
+
+@main.command()
+@click.argument('name', type=str)
 @click.option('--block/--no-block', default=False)
 def stop(name, block):
     instances = instances_by_name(name)
