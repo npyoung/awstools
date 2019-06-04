@@ -4,6 +4,7 @@ import boto3
 import subprocess
 from os.path import expanduser, isfile
 from time import sleep, time
+import webbrowser
 
 ec2 = boto3.resource('ec2')
 
@@ -108,6 +109,7 @@ def forward(name, port, public):
                           "-fNTM",
                           "-L", "{0:d}:localhost:{0:d}".format(port),
                           "ubuntu@{:s}".format(ip)])
+        webbrowser.open("localhost:{0:d}".format(port), new=2)
     else:
         raise ValueError("There were {:d} instances by that name".format(len(ips)))
 
