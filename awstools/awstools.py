@@ -103,7 +103,7 @@ def attach(name, public):
 
 
 @main.command()
-@click.argument('from', type=str)
+@click.argument('frm', type=str)
 @click.argument('to', type=str)
 @click.option('--public/--private', default=False)
 def sync(frm, to, public):
