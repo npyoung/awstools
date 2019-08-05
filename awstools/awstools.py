@@ -73,26 +73,18 @@ def start(name):
 
 @main.command()
 @click.argument('name', type=str)
-@click.option('--public/--private', default=False)
-def ip(name, public):
+def ip(name):
     instances = instances_by_name(name)
-    if public:
-        ips = [instance.public_ip_address for instance in instances]
-    else:
-        ips = [instance.private_ip_address for instance in instances]
+    ips = [instance.public_ip_address for instance in instances]
     for ip in ips:
         print(ip)
 
 
 @main.command()
 @click.argument('name', type=str)
-@click.option('--public/--private', default=False)
-def attach(name, public):
+def attach(name):
     instances = instances_by_name(name)
-    if public:
-        ips = [instance.public_ip_address for instance in instances]
-    else:
-        ips = [instance.private_ip_address for instance in instances]
+    ips = [instance.public_ip_address for instance in instances]
     if len(ips) == 1:
         ip = ips[0]
         print("Logging into {:s}".format(ip))
@@ -105,17 +97,13 @@ def attach(name, public):
 @main.command()
 @click.argument('frm', type=str)
 @click.argument('to', type=str)
-@click.option('--public/--private', default=False)
-def sync(frm, to, public):
+def sync(frm, to):
     substituted_paths = []
     for path in [frm, to]:
         if ':' in path:
             name, trail = path.split(':', 1)
             instances = instances_by_name(name)
-            if public:
-                ips = [instance.public_ip_address for instance in instances]
-            else:
-                ips = [instance.private_ip_address for instance in instances]
+            ips = [instance.public_ip_address for instance in instances]
             if len(ips) == 1:
                 ip = ips[0]
             else:
@@ -136,13 +124,9 @@ def sync(frm, to, public):
 @main.command()
 @click.argument('name', type=str)
 @click.argument('port', type=int, default=8888)
-@click.option('--public/--private', default=False)
-def forward(name, port, public):
+def forward(name, port):
     instances = instances_by_name(name)
-    if public:
-        ips = [instance.public_ip_address for instance in instances]
-    else:
-        ips = [instance.private_ip_address for instance in instances]
+    ips = [instance.public_ip_address for instance in instances]
     if len(ips) == 1:
         ip = ips[0]
         print("Forwarding port {:d} from {:s}".format(port, ip))
