@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import click
 import boto3
+from prettytable import PrettyTable
 import subprocess
 from os.path import expanduser, isfile
 from time import sleep, time
@@ -38,6 +39,39 @@ def main():
 
 
 @main.command()
+@click.argument('states', type=str, required=False, nargs=-1)
+def list(states=None):
+    """List all EC2 instances with some basic info, optionally specifying a list of states."""
+    if states:
+        response = ec2.instances.filter(
+            Filters=[
+                {
+                    'Name': 'instance-state-name',
+                    'Values': states
+                }
+            ]
+        )
+    else:
+        response = ec2.instances.all()
+
+    table = PrettyTable(['Name', 'State', 'Type', 'Key'])
+    table.align = 'l'
+    for instance in response:
+        name = ""
+        for tag in instance.tags:
+            if tag['Key'] == 'Name':
+                name = tag['Value']
+
+        state = instance.state['Name']
+
+        table.add_row([
+            name, state, instance.instance_type, instance.key_name
+        ])
+
+    print(table)
+
+
+@main.command()
 @click.argument('name', type=str)
 @click.argument('type', type=str, required=False)
 def type(name, type=None):
@@ -45,7 +79,7 @@ def type(name, type=None):
     instances = instances_by_name(name)
     for instance in instances:
         if not type:
-            print("{:s}: {:s}".format(instance.private_ip_address,
+            print("{:s}: {:s}".format(instance.public_ip_address,
                                       instance.instance_type))
         else:
             instance.modify_attribute(
@@ -77,6 +111,7 @@ def start(name):
 @main.command()
 @click.argument('name', type=str)
 def ip(name):
+    """List the public and private IPs of a named instance."""
     instances = instances_by_name(name)
     for instance in instances:
         print(name)
@@ -87,6 +122,7 @@ def ip(name):
 @main.command()
 @click.argument('name', type=str)
 def attach(name):
+    """Drop into a shell connection to a named instance via SSH."""
     instances = instances_by_name(name)
     ips = [instance.public_ip_address for instance in instances]
     if len(ips) == 1:
@@ -129,6 +165,7 @@ def sync(frm, to):
 @click.argument('name', type=str)
 @click.argument('port', type=int, default=8888)
 def forward(name, port):
+    """Map a port (default: 8888) from your local machine to a named EC2 instance."""
     instances = instances_by_name(name)
     ips = [instance.public_ip_address for instance in instances]
     if len(ips) == 1:
@@ -179,6 +216,7 @@ def unforward(name, port):
 @click.argument('name', type=str)
 @click.option('--block/--no-block', default=True)
 def reboot(name, block):
+    """Reboot a named EC2 instance and optionally wait for the instance to be back online."""
     instances = instances_by_name(name)
     for instance in instances:
         instance.reboot()
@@ -194,6 +232,7 @@ def reboot(name, block):
 @click.argument('name', type=str)
 @click.option('--block/--no-block', default=False)
 def stop(name, block):
+    """Stop a named EC2 instance and optionally wait for completed shutdown."""
     instances = instances_by_name(name)
     for instance in instances:
         ip = instance.private_ip_address
