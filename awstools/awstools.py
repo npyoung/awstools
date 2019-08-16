@@ -41,6 +41,7 @@ def main():
 @click.argument('name', type=str)
 @click.argument('type', type=str, required=False)
 def type(name, type=None):
+    """Get or set the instance type of a named EC2 instance."""
     instances = instances_by_name(name)
     for instance in instances:
         if not type:
@@ -56,6 +57,7 @@ def type(name, type=None):
 @main.command()
 @click.argument('name', type=str)
 def status(name):
+    """Get or set the status (starting, started, stopped, etc) of a named EC2 instance."""
     instances = instances_by_name(name)
     for instance in instances:
         print("{:s}".format(instance.state['Name']))
@@ -63,6 +65,7 @@ def status(name):
 @main.command()
 @click.argument('name', type=str)
 def start(name):
+    """Start an EC2 instance and wait until it's running."""
     instances = instances_by_name(name)
     for instance in instances:
         instance.start()
@@ -75,9 +78,10 @@ def start(name):
 @click.argument('name', type=str)
 def ip(name):
     instances = instances_by_name(name)
-    ips = [instance.public_ip_address for instance in instances]
-    for ip in ips:
-        print(ip)
+    for instance in instances:
+        print(name)
+        print("  Public:  {:}".format(instance.public_ip_address))
+        print("  Private: {:}".format(instance.private_ip_address))
 
 
 @main.command()
