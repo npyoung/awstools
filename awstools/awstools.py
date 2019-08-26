@@ -79,7 +79,7 @@ def type(name, type=None):
     instances = instances_by_name(name)
     for instance in instances:
         if not type:
-            print("{:s}: {:s}".format(instance.public_ip_address,
+            print("{:s}: {:s}".format(instance.instance_id,
                                       instance.instance_type))
         else:
             instance.modify_attribute(
