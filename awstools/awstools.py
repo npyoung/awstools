@@ -88,6 +88,19 @@ def type(name, type=None):
                 }
             )
 
+
+@main.command()
+@click.argument('original', type=str)
+@click.argument('new', type=str)
+def name(original, new):
+    """Name an instance"""
+    instances = instances_by_name(original)
+    for instance in instances:
+        instance.create_tags(Tags=[{'Key': 'Name',
+                                    'Value': new}])
+        print(original + " ==> " + new)
+
+
 @main.command()
 @click.argument('name', type=str)
 def status(name):
