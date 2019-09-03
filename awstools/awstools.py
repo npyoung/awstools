@@ -163,22 +163,23 @@ def sync(frm, to):
 
 @main.command()
 @click.argument('name', type=str)
-@click.argument('port', type=int, default=8888)
-def forward(name, port):
+@click.argument('from_port', type=int, default=8888)
+@click.argument('to_port', type=int, default=8888)
+def forward(name, from_port, to_port):
     """Map a port (default: 8888) from your local machine to a named EC2 instance."""
     instances = instances_by_name(name)
     ips = [instance.public_ip_address for instance in instances]
     if len(ips) == 1:
         ip = ips[0]
-        print("Forwarding port {:d} from {:s}".format(port, ip))
+        print("Forwarding port {:d} to {:s}:{:d}".format(from_port, ip, to_port))
         socket_name = expanduser("~/.ssh/" + ip.replace('.', '-') + ".ctl")
         subprocess.Popen(["ssh",
                           "-oStrictHostKeyChecking=no",
                           "-S", socket_name,
                           "-fNTM",
-                          "-L", "{0:d}:localhost:{0:d}".format(port),
+                          "-L", "{:d}:localhost:{:d}".format(from_port, to_port),
                           "ubuntu@{:s}".format(ip)])
-        webbrowser.open_new_tab("http://localhost:{0:d}".format(port))
+        webbrowser.open_new_tab("http://localhost:{:d}".format(from_port))
     else:
         raise ValueError("There were {:d} instances by that name".format(len(ips)))
 
