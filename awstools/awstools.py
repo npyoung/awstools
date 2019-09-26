@@ -177,11 +177,15 @@ def sync(frm, to):
 @main.command()
 @click.argument('name', type=str)
 @click.argument('from_port', type=int, default=8888)
-@click.argument('to_port', type=int, default=8888)
+@click.argument('to_port', type=int, default=None)
 def forward(name, from_port, to_port):
     """Map a port (default: 8888) from your local machine to a named EC2 instance."""
     instances = instances_by_name(name)
     ips = [instance.public_ip_address for instance in instances]
+
+    if to_port is None:
+        to_port = from_port
+
     if len(ips) == 1:
         ip = ips[0]
         print("Forwarding port {:d} to {:s}:{:d}".format(from_port, ip, to_port))
