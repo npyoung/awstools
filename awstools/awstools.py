@@ -162,7 +162,7 @@ def sync(frm, to):
             else:
                 raise ValueError("There were {:d} instances by that name".format(len(ips)))
             new_path = ':'.join([ip, trail])
-            substituted_paths.append(new_path)
+            substituted_paths.append("ubuntu@" + new_path)
         else:
             substituted_paths.append(path)
 
@@ -177,13 +177,13 @@ def sync(frm, to):
 @main.command()
 @click.argument('name', type=str)
 @click.argument('from_port', type=int, default=8888)
-@click.argument('to_port', type=int, default=None)
+@click.argument('to_port', type=int, default=-1)
 def forward(name, from_port, to_port):
     """Map a port (default: 8888) from your local machine to a named EC2 instance."""
     instances = instances_by_name(name)
     ips = [instance.public_ip_address for instance in instances]
 
-    if to_port is None:
+    if to_port == -1:
         to_port = from_port
 
     if len(ips) == 1:
