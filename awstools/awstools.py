@@ -205,7 +205,7 @@ def forward(name, from_port, to_port):
 @click.argument('name', type=str)
 def list_forwards(name):
     instances = instances_by_name(name)
-    ips = [instance.private_ip_address for instance in instances]
+    ips = [instance.public_ip_address for instance in instances]
     for ip in ips:
         socket_name = expanduser("~/.ssh/" + ip.replace('.', '-') + ".ctl")
         subprocess.Popen(["ssh",
@@ -220,7 +220,7 @@ def list_forwards(name):
 def unforward(name, port):
     instances = instances_by_name(name)
     for instance in instances:
-        ip = instance.private_ip_address
+        ip = instance.public_ip_address
         socket_name = expanduser("~/.ssh/" + ip.replace('.', '-') + ".ctl")
         if isfile(socket_name):
             print("Closing open port forward: " + socket_name)
