@@ -254,7 +254,7 @@ def stop(name, block):
     """Stop a named EC2 instance and optionally wait for completed shutdown."""
     instances = instances_by_name(name)
     for instance in instances:
-        ip = instance.private_ip_address
+        ip = instance.public_ip_address
         socket_name = expanduser("~/.ssh/" + ip.replace('.', '-') + ".ctl")
         if isfile(socket_name):
             print("Closing open port forward: " + socket_name)
@@ -268,7 +268,7 @@ def stop(name, block):
         for instance in instances:
             wait(instance, 'stopped')
     for instance in instances:
-        print("{:s} is now {:s}".format(instance.private_ip_address, instance.state['Name']))
+        print("{:s} is now {:s}".format(instance.instance_id, instance.state['Name']))
 
 
 if __name__ == "__main__":
