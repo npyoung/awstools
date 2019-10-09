@@ -141,7 +141,7 @@ def attach(name):
     if len(ips) == 1:
         ip = ips[0]
         print("Logging into {:s}".format(ip))
-        cmd = 'ssh -t -oStrictHostKeyChecking=no ' + "ubuntu@{:s} ".format(ip) + "'screen -L -xRR'"
+        cmd = 'ssh -t -oStrictHostKeyChecking=no ' + "ubuntu@{:s} ".format(ip) + "'screen -xRR'"
         print("Running " + cmd)
         subprocess.call(cmd, shell=True)
     else:
