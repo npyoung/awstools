@@ -191,12 +191,24 @@ def forward(name, from_port, to_port):
         ip = ips[0]
         print("Forwarding port {:d} to {:s}:{:d}".format(from_port, ip, to_port))
         socket_name = expanduser("~/.ssh/" + ip.replace('.', '-') + ".ctl")
-        subprocess.Popen(["ssh",
-                          "-oStrictHostKeyChecking=no",
-                          "-S", socket_name,
-                          "-fNTM",
-                          "-L", "{:d}:localhost:{:d}".format(from_port, to_port),
-                          "ubuntu@{:s}".format(ip)])
+
+        cmd = ["ssh",
+               "-oStrictHostKeyChecking=no",
+               "-S", socket_name,
+               "-fNT"
+               ]
+
+        if isfile(socket_name):
+            print("Using existing control socket at {:s}".format(socket_name))
+        else:
+            cmd.append("-M")
+
+        cmd.extend(["-L",
+                    "{:d}:localhost:{:d}".format(from_port, to_port),
+                    "ubuntu@{:s}".format(ip)
+                    ])
+
+        subprocess.Popen(cmd)
         webbrowser.open_new_tab("http://localhost:{:d}".format(from_port))
     else:
         raise ValueError("There were {:d} instances by that name".format(len(ips)))
