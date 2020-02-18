@@ -41,36 +41,32 @@ def wait(instance, state, timeout=None, interval=0.5):
 
 def _forward(instance, from_port=8888, to_port=8888):
     """Map a port (default: 8888) from your local machine to a named EC2 instance."""
-    ips = instance.public_ip_address
+    ip = instance.public_ip_address
 
     if to_port == -1:
         to_port = from_port
 
-    if len(ips) == 1:
-        ip = ips[0]
-        print("Forwarding port {:d} to {:s}:{:d}".format(from_port, ip, to_port))
-        socket_name = expanduser("~/.ssh/" + ip.replace('.', '-') + ".ctl")
+    print("Forwarding port {:d} to {:s}:{:d}".format(from_port, ip, to_port))
+    socket_name = expanduser("~/.ssh/" + ip.replace('.', '-') + ".ctl")
 
-        cmd = ["ssh",
-               "-oStrictHostKeyChecking=no",
-               "-S", socket_name,
-               "-fNT"
-               ]
+    cmd = ["ssh",
+           "-oStrictHostKeyChecking=no",
+           "-S", socket_name,
+           "-fNT"
+           ]
 
-        if isfile(socket_name):
-            print("Using existing control socket at {:s}".format(socket_name))
-        else:
-            cmd.append("-M")
-
-        cmd.extend(["-L",
-                    "{:d}:localhost:{:d}".format(from_port, to_port),
-                    "ubuntu@{:s}".format(ip)
-                    ])
-
-        subprocess.Popen(cmd)
-        webbrowser.open_new_tab("http://localhost:{:d}".format(from_port))
+    if isfile(socket_name):
+        print("Using existing control socket at {:s}".format(socket_name))
     else:
-        raise ValueError("There were {:d} instances by that name".format(len(ips)))
+        cmd.append("-M")
+
+    cmd.extend(["-L",
+                "{:d}:localhost:{:d}".format(from_port, to_port),
+                "ubuntu@{:s}".format(ip)
+                ])
+
+    subprocess.Popen(cmd)
+    webbrowser.open_new_tab("http://localhost:{:d}".format(from_port))
 
 
 @click.group()
@@ -162,7 +158,9 @@ def start(name, forward):
         wait(instance, 'running')
     if forward:
         sleep(FORWARD_DELAY)
-        _forward(instances[0])
+        for instance in instances:
+            _forward(instance)
+            break
 
 
 @main.command()
