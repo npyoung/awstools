@@ -7,6 +7,10 @@ from os.path import expanduser, isfile
 from time import sleep, time
 import webbrowser
 
+
+FORWARD_DELAY = 5
+
+
 ec2 = boto3.resource('ec2')
 
 
@@ -23,6 +27,7 @@ def instances_by_name(name):
         print("No instances found by that name")
     return response
 
+
 def wait(instance, state, timeout=None, interval=0.5):
     t0 = time()
     while instance.state['Name'] != state:
@@ -32,6 +37,41 @@ def wait(instance, state, timeout=None, interval=0.5):
         else:
             sleep(interval)
     return True
+
+
+def _forward(instance, from_port=8888, to_port=8888):
+    """Map a port (default: 8888) from your local machine to a named EC2 instance."""
+    ips = instance.public_ip_address
+
+    if to_port == -1:
+        to_port = from_port
+
+    if len(ips) == 1:
+        ip = ips[0]
+        print("Forwarding port {:d} to {:s}:{:d}".format(from_port, ip, to_port))
+        socket_name = expanduser("~/.ssh/" + ip.replace('.', '-') + ".ctl")
+
+        cmd = ["ssh",
+               "-oStrictHostKeyChecking=no",
+               "-S", socket_name,
+               "-fNT"
+               ]
+
+        if isfile(socket_name):
+            print("Using existing control socket at {:s}".format(socket_name))
+        else:
+            cmd.append("-M")
+
+        cmd.extend(["-L",
+                    "{:d}:localhost:{:d}".format(from_port, to_port),
+                    "ubuntu@{:s}".format(ip)
+                    ])
+
+        subprocess.Popen(cmd)
+        webbrowser.open_new_tab("http://localhost:{:d}".format(from_port))
+    else:
+        raise ValueError("There were {:d} instances by that name".format(len(ips)))
+
 
 @click.group()
 def main():
@@ -111,7 +151,8 @@ def status(name):
 
 @main.command()
 @click.argument('name', type=str)
-def start(name):
+@click.option('--forward', '-f', is_flag=True, default=False)
+def start(name, forward):
     """Start an EC2 instance and wait until it's running."""
     instances = instances_by_name(name)
     for instance in instances:
@@ -119,6 +160,9 @@ def start(name):
     print("Waiting for instances to start")
     for instance in instances:
         wait(instance, 'running')
+    if forward:
+        sleep(FORWARD_DELAY)
+        _forward(instances[0])
 
 
 @main.command()
@@ -181,37 +225,8 @@ def sync(frm, to):
 @click.argument('to_port', type=int, default=-1)
 def forward(name, from_port, to_port):
     """Map a port (default: 8888) from your local machine to a named EC2 instance."""
-    instances = instances_by_name(name)
-    ips = [instance.public_ip_address for instance in instances]
-
-    if to_port == -1:
-        to_port = from_port
-
-    if len(ips) == 1:
-        ip = ips[0]
-        print("Forwarding port {:d} to {:s}:{:d}".format(from_port, ip, to_port))
-        socket_name = expanduser("~/.ssh/" + ip.replace('.', '-') + ".ctl")
-
-        cmd = ["ssh",
-               "-oStrictHostKeyChecking=no",
-               "-S", socket_name,
-               "-fNT"
-               ]
-
-        if isfile(socket_name):
-            print("Using existing control socket at {:s}".format(socket_name))
-        else:
-            cmd.append("-M")
-
-        cmd.extend(["-L",
-                    "{:d}:localhost:{:d}".format(from_port, to_port),
-                    "ubuntu@{:s}".format(ip)
-                    ])
-
-        subprocess.Popen(cmd)
-        webbrowser.open_new_tab("http://localhost:{:d}".format(from_port))
-    else:
-        raise ValueError("There were {:d} instances by that name".format(len(ips)))
+    instance = instances_by_name(name)[0]
+    _forward(instance, from_port, to_port)
 
 
 @main.command()
