@@ -223,8 +223,9 @@ def sync(frm, to):
 @click.argument('to_port', type=int, default=-1)
 def forward(name, from_port, to_port):
     """Map a port (default: 8888) from your local machine to a named EC2 instance."""
-    instance = instances_by_name(name)[0]
-    _forward(instance, from_port, to_port)
+    for instance in instances_by_name(name):
+        _forward(instance, from_port, to_port)
+        break    
 
 
 @main.command()
