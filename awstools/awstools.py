@@ -75,22 +75,32 @@ def main():
 
 
 @main.command()
-@click.argument('states', type=str, required=False, nargs=-1)
-def list(states=None):
+@click.option('--name', '-n', type=str, default=None)
+@click.option('--state', '-s', type=str, default=None)
+def list(name, state):
     """List all EC2 instances with some basic info, optionally specifying a list of states."""
-    if states:
+    filters = []
+
+    if name:
+        filters.append({
+            'Name': 'tag:Name',
+            'Values': [name]
+        })
+
+    if state:
+        filters.append({
+            'Name': 'instance-state-name',
+            'Values': [state]
+        })
+
+    if len(filters) > 0:
         response = ec2.instances.filter(
-            Filters=[
-                {
-                    'Name': 'instance-state-name',
-                    'Values': states
-                }
-            ]
+            Filters=filters
         )
     else:
         response = ec2.instances.all()
 
-    table = PrettyTable(['Name', 'State', 'Type', 'Key'])
+    table = PrettyTable(['Name', 'State', 'Type', 'Public IP', 'Key'])
     table.align = 'l'
     for instance in response:
         name = ""
@@ -101,7 +111,7 @@ def list(states=None):
         state = instance.state['Name']
 
         table.add_row([
-            name, state, instance.instance_type, instance.key_name
+            name, state, instance.instance_type, instance.public_ip_address, instance.key_name
         ])
 
     print(table)
@@ -225,7 +235,7 @@ def forward(name, from_port, to_port):
     """Map a port (default: 8888) from your local machine to a named EC2 instance."""
     for instance in instances_by_name(name):
         _forward(instance, from_port, to_port)
-        break    
+        break
 
 
 @main.command()
