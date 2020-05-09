@@ -8,7 +8,7 @@ from time import sleep, time
 import webbrowser
 
 
-FORWARD_DELAY = 5
+FORWARD_DELAY = 10 # seconds to wait for instance ssh to be up
 
 
 ec2 = boto3.resource('ec2')
