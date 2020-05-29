@@ -2,6 +2,7 @@
 import click
 import boto3
 from prettytable import PrettyTable
+from retrying import retry
 import subprocess
 from os.path import expanduser, isfile
 from time import sleep, time
@@ -77,7 +78,9 @@ def main():
 @main.command()
 @click.option('--name', '-n', type=str, default=None)
 @click.option('--state', '-s', type=str, default=None)
-def list(name, state):
+@click.option('--type', '-t', type=str, default=None)
+@click.option('--key', '-k', type=str, default=None)
+def list(name, state, type, key):
     """List all EC2 instances with some basic info, optionally specifying a list of states."""
     filters = []
 
@@ -91,6 +94,18 @@ def list(name, state):
         filters.append({
             'Name': 'instance-state-name',
             'Values': [state]
+        })
+
+    if type:
+        filters.append({
+            'Name': 'instance-type',
+            'Values': [type]
+        })
+
+    if key:
+        filters.append({
+            'Name': 'key-name',
+            'Values': [key]
         })
 
     if len(filters) > 0:
