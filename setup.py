@@ -14,6 +14,7 @@ setup(
         'click',
         'boto3',
         'prettytable',
+        'retrying'
     ],
     entry_points={
         'console_scripts': [

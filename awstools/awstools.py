@@ -40,6 +40,7 @@ def wait(instance, state, timeout=None, interval=0.5):
     return True
 
 
+@retry(wait_exponential_multiplier=1000, wait_exponential_max=120 * 1000)
 def _forward(instance, from_port=8888, to_port=8888):
     """Map a port (default: 8888) from your local machine to a named EC2 instance."""
     ip = instance.public_ip_address
