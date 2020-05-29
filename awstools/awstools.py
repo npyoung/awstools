@@ -3,8 +3,10 @@ import click
 import boto3
 from prettytable import PrettyTable
 from retrying import retry
-import subprocess
+
 from os.path import expanduser, isfile
+import re
+import subprocess
 from time import sleep, time
 import webbrowser
 
@@ -131,6 +133,20 @@ def list(name, state, type, key):
         ])
 
     print(table)
+
+
+@main.command()
+@click.argument('identifier', type=str)
+@click.argument('name', type=str)
+def name(identifier):
+    id_regex = r"^i-[\d\w]{17}%"
+    #ip_regex = r"^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$"
+    #dns_regex = r"^ec2-(?:[0-9]{1,3}-){3}[0-9]{1,3}.[\S]+.compute.amazonaws.com$"
+
+    if re.fullmatch(id_regex, identifier):
+        ec2.create_tags(Resources=[identifier], Tags=[{'Key': 'Name', 'Value': name}])
+    else:
+        raise ValueError("identifier is not a valid EC2 instance ID")
 
 
 @main.command()
