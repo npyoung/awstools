@@ -17,6 +17,19 @@ FORWARD_DELAY = 10 # seconds to wait for instance ssh to be up
 ec2 = boto3.resource('ec2')
 
 
+def click_warn(msg):
+    click.secho(msg, fg='yellow')
+
+
+def click_error(msg):
+    click.secho(msg, fg='red')
+    click.Abort()
+
+
+def click_info(msg):
+    click.echo(msg)
+
+
 def instances_by_name(name):
     response = ec2.instances.filter(
         Filters=[
@@ -26,9 +39,13 @@ def instances_by_name(name):
             }
         ]
     )
-    if len([x for x in response]) == 0:
-        print("No instances found by that name")
-    return response
+    instances = [x for x in response]
+    if len(instances) == 0:
+        click_error(f"No instances found by name {name:s}")
+    else:
+        click_info(f"Found {len(instances):d} instances by name {name:s}")
+        
+    return instances
 
 
 def wait(instance, state, timeout=None, interval=0.5):
@@ -50,7 +67,7 @@ def _forward(instance, from_port=8888, to_port=8888):
     if to_port == -1:
         to_port = from_port
 
-    print("Forwarding port {:d} to {:s}:{:d}".format(from_port, ip, to_port))
+    click_info("Forwarding port {:d} to {:s}:{:d}".format(from_port, ip, to_port))
     socket_name = expanduser("~/.ssh/" + ip.replace('.', '-') + ".ctl")
 
     cmd = ["ssh",
@@ -60,7 +77,7 @@ def _forward(instance, from_port=8888, to_port=8888):
            ]
 
     if isfile(socket_name):
-        print("Using existing control socket at {:s}".format(socket_name))
+        click_info("Using existing control socket at {:s}".format(socket_name))
     else:
         cmd.append("-M")
 
@@ -132,7 +149,7 @@ def list(name, state, type, key):
             name, state, instance.instance_type, instance.public_ip_address, instance.key_name
         ])
 
-    print(table)
+    click_info(table)
 
 
 @main.command()
@@ -157,8 +174,12 @@ def type(name, type=None):
     instances = instances_by_name(name)
     for instance in instances:
         if not type:
-            print("{:s}: {:s}".format(instance.instance_id,
-                                      instance.instance_type))
+            click_info(
+                "{:s}: {:s}".format(
+                    instance.instance_id,
+                    instance.instance_type
+                )
+            )
         else:
             instance.modify_attribute(
                 InstanceType={
@@ -176,7 +197,7 @@ def name(original, new):
     for instance in instances:
         instance.create_tags(Tags=[{'Key': 'Name',
                                     'Value': new}])
-        print(original + " ==> " + new)
+        click_info(original + " ==> " + new)
 
 
 @main.command()
@@ -185,7 +206,7 @@ def status(name):
     """Get or set the status (starting, started, stopped, etc) of a named EC2 instance."""
     instances = instances_by_name(name)
     for instance in instances:
-        print("{:s}".format(instance.state['Name']))
+        click_info("{:s}".format(instance.state['Name']))
 
 @main.command()
 @click.argument('name', type=str)
@@ -195,7 +216,7 @@ def start(name, forward):
     instances = instances_by_name(name)
     for instance in instances:
         instance.start()
-    print("Waiting for instances to start")
+    click_info("Waiting for instances to start...")
     for instance in instances:
         wait(instance, 'running')
     if forward:
@@ -211,9 +232,9 @@ def ip(name):
     """List the public and private IPs of a named instance."""
     instances = instances_by_name(name)
     for instance in instances:
-        print(name)
-        print("  Public:  {:}".format(instance.public_ip_address))
-        print("  Private: {:}".format(instance.private_ip_address))
+        click_info(name)
+        click_info("  Public:  {:}".format(instance.public_ip_address))
+        click_info("  Private: {:}".format(instance.private_ip_address))
 
 
 @main.command()
@@ -224,9 +245,9 @@ def attach(name):
     ips = [instance.public_ip_address for instance in instances]
     if len(ips) == 1:
         ip = ips[0]
-        print("Logging into {:s}".format(ip))
+        click_info("Logging into {:s}".format(ip))
         cmd = 'ssh -t -oStrictHostKeyChecking=no ' + "ubuntu@{:s} ".format(ip) + "'screen -xRR'"
-        print("Running " + cmd)
+        click_info("Running " + cmd)
         subprocess.call(cmd, shell=True)
     else:
         raise ValueError("There were {:d} instances by that name".format(len(ips)))
@@ -251,7 +272,7 @@ def sync(frm, to):
         else:
             substituted_paths.append(path)
 
-    print("Rsyncing from {:s} to {:s}".format(*substituted_paths))
+    click_info("Rsyncing from {:s} to {:s}".format(*substituted_paths))
     subprocess.Popen(["rsync",
                       "-arvz",
                       "--progress",
@@ -292,7 +313,7 @@ def unforward(name, port):
         ip = instance.public_ip_address
         socket_name = expanduser("~/.ssh/" + ip.replace('.', '-') + ".ctl")
         if isfile(socket_name):
-            print("Closing open port forward: " + socket_name)
+            click_info("Closing open port forward: " + socket_name)
             subprocess.Popen(["ssh",
                               "-S", socket_name,
                               "-TO", "exit",
@@ -308,11 +329,11 @@ def reboot(name, block):
     for instance in instances:
         instance.reboot()
     if block:
-        print("Waiting on instances to stop")
+        click_info("Waiting on instances to stop")
         for instance in instances:
             wait(instance, 'running')
     for instance in instances:
-        print("{:s} is now {:s}".format(ip.private_ip_address, instance.state['Name']))
+        click_info("{:s} is now {:s}".format(ip.private_ip_address, instance.state['Name']))
 
 
 @main.command()
@@ -325,18 +346,18 @@ def stop(name, block):
         ip = instance.public_ip_address
         socket_name = expanduser("~/.ssh/" + ip.replace('.', '-') + ".ctl")
         if isfile(socket_name):
-            print("Closing open port forward: " + socket_name)
+            click_info("Closing open port forward: " + socket_name)
             subprocess.Popen(["ssh",
                               "-S", socket_name,
                               "-TO", "exit",
                               ip])
     instances.stop()
     if block:
-        print("Waiting on instances to stop")
+        click_info("Waiting on instances to stop")
         for instance in instances:
             wait(instance, 'stopped')
     for instance in instances:
-        print("{:s} is now {:s}".format(instance.instance_id, instance.state['Name']))
+        click_info("{:s} is now {:s}".format(instance.instance_id, instance.state['Name']))
 
 
 if __name__ == "__main__":
