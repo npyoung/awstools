@@ -30,6 +30,16 @@ def click_info(msg):
     click.echo(msg)
 
 
+def instance_name_complete(ctx, param, incomplete):
+    instances = instances_by_name(incomplete + "*")
+    names = []
+    for instance in instances:
+        for tag in instance.tags:
+            if tag['Key'] == 'Name':
+                names.append(tag['Value'])
+    return names
+
+
 def instances_by_name(name):
     response = ec2.instances.filter(
         Filters=[
@@ -167,7 +177,7 @@ def name(identifier):
 
 
 @main.command()
-@click.argument('name', type=str)
+@click.argument('name', type=str, shell_complete=instance_name_complete)
 @click.argument('type', type=str, required=False)
 def type(name, type=None):
     """Get or set the instance type of a named EC2 instance."""
@@ -189,7 +199,7 @@ def type(name, type=None):
 
 
 @main.command()
-@click.argument('original', type=str)
+@click.argument('original', type=str, shell_complete=instance_name_complete)
 @click.argument('new', type=str)
 def name(original, new):
     """Name an instance"""
@@ -201,7 +211,7 @@ def name(original, new):
 
 
 @main.command()
-@click.argument('name', type=str)
+@click.argument('name', type=str, shell_complete=instance_name_complete)
 def status(name):
     """Get or set the status (starting, started, stopped, etc) of a named EC2 instance."""
     instances = instances_by_name(name)
@@ -209,7 +219,7 @@ def status(name):
         click_info("{:s}".format(instance.state['Name']))
 
 @main.command()
-@click.argument('name', type=str)
+@click.argument('name', type=str, shell_complete=instance_name_complete)
 @click.option('--forward', '-f', is_flag=True, default=False)
 def start(name, forward):
     """Start an EC2 instance and wait until it's running."""
@@ -227,7 +237,7 @@ def start(name, forward):
 
 
 @main.command()
-@click.argument('name', type=str)
+@click.argument('name', type=str, shell_complete=instance_name_complete)
 def ip(name):
     """List the public and private IPs of a named instance."""
     instances = instances_by_name(name)
@@ -238,7 +248,7 @@ def ip(name):
 
 
 @main.command()
-@click.argument('name', type=str)
+@click.argument('name', type=str, shell_complete=instance_name_complete)
 def attach(name):
     """Drop into a shell connection to a named instance via SSH."""
     instances = instances_by_name(name)
@@ -281,7 +291,7 @@ def sync(frm, to):
 
 
 @main.command()
-@click.argument('name', type=str)
+@click.argument('name', type=str, shell_complete=instance_name_complete)
 @click.argument('from_port', type=int, default=8888)
 @click.argument('to_port', type=int, default=-1)
 def forward(name, from_port, to_port):
@@ -292,7 +302,7 @@ def forward(name, from_port, to_port):
 
 
 @main.command()
-@click.argument('name', type=str)
+@click.argument('name', type=str, shell_complete=instance_name_complete)
 def list_forwards(name):
     instances = instances_by_name(name)
     ips = [instance.public_ip_address for instance in instances]
@@ -305,7 +315,7 @@ def list_forwards(name):
 
 
 @main.command()
-@click.argument('name', type=str)
+@click.argument('name', type=str, shell_complete=instance_name_complete)
 @click.argument('port', type=int, default=8888)
 def unforward(name, port):
     instances = instances_by_name(name)
@@ -321,7 +331,7 @@ def unforward(name, port):
 
 
 @main.command()
-@click.argument('name', type=str)
+@click.argument('name', type=str, shell_complete=instance_name_complete)
 @click.option('--block/--no-block', default=True)
 def reboot(name, block):
     """Reboot a named EC2 instance and optionally wait for the instance to be back online."""
@@ -337,7 +347,7 @@ def reboot(name, block):
 
 
 @main.command()
-@click.argument('name', type=str)
+@click.argument('name', type=str, shell_complete=instance_name_complete)
 @click.option('--block/--no-block', default=False)
 def stop(name, block):
     """Stop a named EC2 instance and optionally wait for completed shutdown."""
