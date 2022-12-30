@@ -370,5 +370,23 @@ def stop(name, block):
         click_info("{:s} is now {:s}".format(instance.instance_id, instance.state['Name']))
 
 
+@main.command()
+@click.argument('name', type=str, shell_complete=instance_name_complete)
+def terminate(name):
+    """Terminate a named EC2 instance."""
+    instances = instances_by_name(name)
+    click.confirm('Are you sure you want to delete these instances?', abort=True)
+    for instance in instances:
+        p = instance.public_ip_address
+        socket_name = expanduser("~/.ssh/" + ip.replace('.', '-') + ".ctl")
+        if isfile(socket_name):
+            click_info("Closing open port forward: " + socket_name)
+            subprocess.Popen(["ssh",
+                              "-S", socket_name,
+                              "-TO", "exit",
+                              ip])
+    instances.terminate()
+
+
 if __name__ == "__main__":
     main()
